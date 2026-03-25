@@ -24,21 +24,27 @@ from _gateway import gateway_request
 
 
 def check_instant():
-    """Test instant mode with a simple question."""
+    """Test instant mode: ask a verifiable factual question and validate the answer."""
     print("[1/2] Instant mode...", end=" ", flush=True)
     try:
         result = gateway_request(
             "POST",
             "/v1/instant",
-            {"query": "what is S&P 500?", "timezone": "Asia/Shanghai"},
+            {"query": "What is the ticker symbol of Apple Inc on NASDAQ?", "timezone": "Asia/Shanghai"},
             timeout=120,
         )
         answer = result.get("answer", "")
-        if answer:
-            print(f"OK ({len(answer)} chars)")
+        if not answer:
+            print("FAIL (empty answer)")
+            return False
+        # Verify: answer must mention AAPL
+        answer_upper = answer.upper()
+        if "AAPL" in answer_upper:
+            print(f"OK (verified AAPL in answer, {len(answer)} chars)")
             return True
         else:
-            print("FAIL (empty answer)")
+            print(f"FAIL (answer does not contain 'AAPL')")
+            print(f"  Answer: {answer[:200]}...")
             return False
     except SystemExit:
         print("FAIL")
@@ -59,12 +65,12 @@ def check_quant():
             return False
         print(f"OK ({task_id[:8]}...)")
 
-        # Step 2: Submit run
+        # Step 2: Submit run with a verifiable question
         print("  Submitting run...", end=" ", flush=True)
         run = gateway_request(
             "POST",
             f"/v1/tasks/{task_id}/runs",
-            {"query": "list top 3 S&P 500 stocks by market cap", "timezone": "Asia/Shanghai"},
+            {"query": "What are the top 3 constituents of S&P 500 by market cap? List their ticker symbols.", "timezone": "Asia/Shanghai"},
             timeout=30,
         )
         run_id = run.get("run_id", "")
@@ -111,11 +117,21 @@ def check_quant():
         print(f"  Downloading '{first}'...", end=" ", flush=True)
         dl = gateway_request("GET", f"/v1/tasks/{task_id}/reports/{first}", timeout=300)
         content = dl.get("content", "")
-        if content:
-            print(f"OK ({len(content)} chars)")
-        else:
+        if not content:
             print("FAIL (empty content)")
             return False
+        print(f"OK ({len(content)} chars)")
+
+        # Step 6: Verify answer correctness
+        # Top S&P 500 constituents should include AAPL, MSFT, or NVDA
+        print("  Verifying answer...", end=" ", flush=True)
+        content_upper = content.upper()
+        expected = ["AAPL", "MSFT", "NVDA"]
+        found = [s for s in expected if s in content_upper]
+        if len(found) >= 2:
+            print(f"OK (found {', '.join(found)})")
+        else:
+            print(f"WARN (expected AAPL/MSFT/NVDA, found: {found or 'none'})")
 
         return True
     except SystemExit:
