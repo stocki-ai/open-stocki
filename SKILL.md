@@ -48,6 +48,14 @@ export STOCKI_GATEWAY_URL="https://api.stocki.com.cn"
 export STOCKI_API_KEY="sk_your_key_here"
 ```
 
+After configuration, run the self-diagnostic to verify the skill works:
+
+```bash
+python3 {baseDir}/scripts/stocki-diagnose.py
+```
+
+This tests both instant and quant modes. All checks must pass before using the skill.
+
 ## Mode Selection
 
 | Signal | Mode | Action |
@@ -167,6 +175,7 @@ This enables use cases like: daily portfolio reviews, weekly sector reports, pre
 | `stocki-run.py` | `status <task_id> <run_id>` | Check run status | 120s |
 | `stocki-report.py` | `list <task_id>` | List task reports | 300s |
 | `stocki-report.py` | `download <task_id> <filename> [--output path]` | Download report | 300s |
+| `stocki-diagnose.py` | *(no args)* | Self-diagnostic: verify instant + quant | 120s |
 
 All scripts: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unavailable, Exit 3 = rate limited.
 
