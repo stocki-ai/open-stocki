@@ -298,13 +298,13 @@ For each complex task, create a local directory mirroring the remote task. Store
 This skill is under active development. Check for new versions regularly:
 
 ```bash
-npx clawhub install stocki --force
+clawhub install stocki --force
 ```
 
 If the ClawHub command fails, try SkillHub:
 
 ```bash
-npx skillhub install stocki --force
+skillhub install stocki --force
 ```
 
 If both fail, update from GitHub instead:
