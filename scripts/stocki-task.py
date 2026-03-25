@@ -9,7 +9,7 @@ Usage:
 
 Stdout: task info
 Stderr: error messages
-Exit:   0 success, 1 auth/client error, 2 service error
+Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited
 """
 
 import argparse
@@ -74,7 +74,7 @@ def main():
 
     p_history = sub.add_parser("history", help="Show task conversation history")
     p_history.add_argument("task_id", help="Task ID (UUID)")
-    p_history.add_argument("--page", type=int, default=1, help="Page number (default: 1)")
+    p_history.add_argument("--page", type=int, default=None, help="Page number (default: 1)")
 
     args = parser.parse_args()
     {"create": cmd_create, "list": cmd_list, "history": cmd_history}[args.command](args)

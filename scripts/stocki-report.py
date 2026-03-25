@@ -8,7 +8,7 @@ Usage:
 
 Stdout: report list or content
 Stderr: error messages
-Exit:   0 success, 1 auth/client error, 2 service error
+Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited
 """
 
 import argparse
@@ -41,7 +41,7 @@ def cmd_download(args):
         timeout=300,
     )
     content = result.get("content", "")
-    output = args.output or args.filename
+    output = args.output or os.path.basename(args.filename)
 
     with open(output, "w", encoding="utf-8") as f:
         f.write(content)

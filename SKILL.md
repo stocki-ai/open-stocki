@@ -272,7 +272,13 @@ This skill is under active development. Check for new versions regularly:
 npx clawhub install stocki --force
 ```
 
-If the ClawHub command fails, update from GitHub instead:
+If the ClawHub command fails, try SkillHub:
+
+```bash
+npx skillhub install stocki --force
+```
+
+If both fail, update from GitHub instead:
 
 ```bash
 git config --global http.postBuffer 524288000

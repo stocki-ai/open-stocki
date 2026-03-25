@@ -2,7 +2,7 @@
 Shared HTTP helper for Stocki OpenClaw scripts.
 
 Reads STOCKI_GATEWAY_URL and STOCKI_API_KEY from environment.
-Provides gateway_request(), format_for_wechat(), and multipart_upload().
+Provides gateway_request(), handle_error(), and format_for_wechat().
 Uses only Python stdlib (urllib, json).
 """
 
@@ -64,10 +64,9 @@ def gateway_request(method, path, body=None, timeout=120):
     """Make an HTTP request to the Gateway. Returns parsed JSON dict."""
     base_url, api_key = _env()
     url = f"{base_url}{path}"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    if body is not None:
+        headers["Content-Type"] = "application/json"
     data = json.dumps(body).encode() if body is not None else None
     req = Request(url, data=data, headers=headers, method=method)
 
