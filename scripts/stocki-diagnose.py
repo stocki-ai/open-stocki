@@ -65,12 +65,12 @@ def check_quant():
             return False
         print(f"OK ({task_id[:8]}...)")
 
-        # Step 2: Submit run with a verifiable question
+        # Step 2: Submit run with a verifiable question pinned to a specific date
         print("  Submitting run...", end=" ", flush=True)
         run = gateway_request(
             "POST",
             f"/v1/tasks/{task_id}/runs",
-            {"query": "What are the top 3 constituents of S&P 500 by market cap? List their ticker symbols.", "timezone": "Asia/Shanghai"},
+            {"query": "What were the top 3 constituents of S&P 500 by market cap as of 2024-12-31? List their ticker symbols.", "timezone": "Asia/Shanghai"},
             timeout=30,
         )
         run_id = run.get("run_id", "")
@@ -123,7 +123,7 @@ def check_quant():
         print(f"OK ({len(content)} chars)")
 
         # Step 6: Verify answer correctness
-        # Top S&P 500 constituents should include AAPL, MSFT, or NVDA
+        # As of 2024-12-31, top S&P 500 by market cap: AAPL, MSFT, NVDA
         print("  Verifying answer...", end=" ", flush=True)
         content_upper = content.upper()
         expected = ["AAPL", "MSFT", "NVDA"]
