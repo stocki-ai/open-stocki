@@ -310,9 +310,6 @@ npx skillhub install stocki --force
 If both fail, update from GitHub instead:
 
 ```bash
-git config --global http.postBuffer 524288000
-git config --global http.lowSpeedLimit 0
-git config --global http.lowSpeedTime 999999
 rm -rf ~/.openclaw/workspace/skills/stocki
-git clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
+git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
