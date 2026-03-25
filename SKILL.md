@@ -100,7 +100,7 @@ Surface `run_id` to user immediately after submission. Runs can take up to 30 mi
 
 ### Step 3: Automatic status polling
 
-After submitting a run, set up a recurring check (e.g. every 1-2 minutes) to poll the run status:
+After submitting a run, set up a recurring check (every 30 seconds to 1 minute) to poll the run status:
 
 ```bash
 python3 {baseDir}/scripts/stocki-run.py status <task_id> <run_id>
