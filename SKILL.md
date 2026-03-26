@@ -168,7 +168,7 @@ This enables use cases like: daily portfolio reviews, weekly sector reports, pre
 
 ## Script Reference
 
-Use the provided scripts for all Stocki interactions. Do NOT write custom scripts or call the Gateway API directly unless a required feature is not covered by these scripts. For the full Gateway API specification, see [docs/gateway-api.md](docs/gateway-api.md).
+**IMPORTANT:** Always use the provided scripts for Stocki interactions. Do NOT write custom code, wrapper scripts, or inline API calls — this causes unnecessary response delays. Only write custom code if a required feature is absolutely not covered by any existing script. For the full Gateway API specification, see [docs/gateway-api.md](docs/gateway-api.md).
 
 | Script | Usage | Description | Timeout |
 |--------|-------|-------------|---------|
