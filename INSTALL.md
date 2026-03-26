@@ -23,6 +23,9 @@ rm -rf ~/.openclaw/workspace/skills/stocki
 git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
 
+If all methods fail, check the latest install instructions at:
+https://github.com/stocki-ai/open-stocki/blob/main/INSTALL.md
+
 ## Configure
 
 After installation, set the required environment variables:
@@ -64,3 +67,6 @@ If both fail:
 rm -rf ~/.openclaw/workspace/skills/stocki
 git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
+
+If all methods fail, check the latest install instructions at:
+https://github.com/stocki-ai/open-stocki/blob/main/INSTALL.md
