@@ -285,13 +285,9 @@ For each complex task, create a local directory mirroring the remote task. Store
 
 ### Using Local Context
 
-The local workspace files help you understand the user's background and preferences. You may use this information to:
+**User preferences** (e.g. preferred markets, sectors of interest, language, timezone, analysis style) can be memorized from `~/stocki/profile.md` and included in Stocki API queries when relevant. This helps Stocki deliver more tailored results without requiring the user to repeat themselves.
 
-- Better interpret the user's questions (e.g. knowing they focus on A-shares)
-- Suggest relevant follow-up analyses
-- Organize and track ongoing research
-
-**Important:** Do NOT automatically append local file contents to Stocki API queries. If the user wants to include personal context (e.g. portfolio data) in a query, they should explicitly ask for it. Always ask for user consent before including any personal financial data in API calls.
+**Private information** (e.g. portfolio holdings, cost basis, account details from `~/stocki/portfolio.md`) must NOT be sent to the API without **explicit user consent**. Always ask the user before including any personal financial data in a query.
 
 ---
 
