@@ -4,19 +4,25 @@
 
 Try the following methods in order until one succeeds:
 
-### Option 1: ClawHub (Recommended)
+### Option 1: One-line install from stocki.com.cn (Recommended)
+
+```bash
+curl -sSL https://stocki.com.cn/install.sh | bash
+```
+
+### Option 2: ClawHub
 
 ```bash
 clawhub install stocki --force
 ```
 
-### Option 2: SkillHub
+### Option 3: SkillHub
 
 ```bash
 skillhub install stocki --force
 ```
 
-### Option 3: Manual install from GitHub
+### Option 4: Manual install from GitHub
 
 ```bash
 rm -rf ~/.openclaw/workspace/skills/stocki
@@ -49,23 +55,18 @@ Both checks must pass for the skill to be ready.
 
 ## Update
 
-Stocki is under active development. Update regularly using the same methods as installation:
+Stocki is under active development. Update regularly — same methods as installation:
+
+```bash
+curl -sSL https://stocki.com.cn/install.sh | bash
+```
+
+Or via ClawHub/SkillHub:
 
 ```bash
 clawhub install stocki --force
-```
-
-If ClawHub fails:
-
-```bash
+# or
 skillhub install stocki --force
-```
-
-If both fail:
-
-```bash
-rm -rf ~/.openclaw/workspace/skills/stocki
-git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=300 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
 
 If all methods fail, check the latest install instructions at:
