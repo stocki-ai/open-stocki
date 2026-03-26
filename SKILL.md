@@ -252,17 +252,16 @@ mkdir -p ~/stocki/tasks
 
 ### User Profile (`~/stocki/profile.md`)
 
-Create and maintain this file to capture user preferences. Update it when the user reveals new information about themselves. Example:
+This file starts **empty**. Only add entries when the user explicitly states or clearly demonstrates a preference through their questions. Do NOT guess or pre-fill any fields.
 
+For example, if the user consistently asks about A-shares in Chinese, you may record:
 ```
 # Investor Profile
-- Type: individual retail investor
-- Risk tolerance: moderate
-- Focus: A-share market, tech sector, dividend stocks
-- Experience: 5 years
+- Focus: A-share market
 - Language: Chinese
-- Preferred analysis style: data-driven, with charts
 ```
+
+Do NOT add fields like "risk tolerance" or "experience" unless the user explicitly mentions them.
 
 ### Portfolio (`~/stocki/portfolio.md`)
 
