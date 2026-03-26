@@ -83,6 +83,7 @@ def check_quant():
         print("  Waiting for completion", end="", flush=True)
         elapsed = 0
         final_status = ""
+        check = {}
         while elapsed < MAX_WAIT:
             time.sleep(POLL_INTERVAL)
             elapsed += POLL_INTERVAL

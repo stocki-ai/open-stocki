@@ -20,7 +20,7 @@ skillhub install stocki --force
 
 ```bash
 rm -rf ~/.openclaw/workspace/skills/stocki
-git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
+git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=300 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
 
 If all methods fail, check the latest install instructions at:
@@ -65,7 +65,7 @@ If both fail:
 
 ```bash
 rm -rf ~/.openclaw/workspace/skills/stocki
-git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
+git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=300 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
 
 If all methods fail, check the latest install instructions at:

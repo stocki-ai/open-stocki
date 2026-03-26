@@ -25,9 +25,12 @@ def cmd_create(args):
     if args.description:
         body["description"] = args.description
     result = gateway_request("POST", "/v1/tasks", body, timeout=30)
-    print(f"task_id: {result['task_id']}")
-    print(f"name: {result['name']}")
-    print(f"created_at: {result['created_at']}")
+    if not result.get("task_id"):
+        print("Error: unexpected response from server", file=sys.stderr)
+        sys.exit(1)
+    print(f"task_id: {result.get('task_id', '')}")
+    print(f"name: {result.get('name', '')}")
+    print(f"created_at: {result.get('created_at', '')}")
 
 
 def cmd_list(_args):

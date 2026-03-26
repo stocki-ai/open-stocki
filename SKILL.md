@@ -50,6 +50,8 @@ export STOCKI_GATEWAY_URL="https://api.stocki.com.cn"
 export STOCKI_API_KEY="sk_your_key_here"
 ```
 
+> **Note:** `{baseDir}` in script paths below is automatically resolved by OpenClaw to the skill's installation directory (e.g. `~/.openclaw/workspace/skills/stocki`). Do not replace it manually.
+
 After configuration, run the self-diagnostic to verify the skill works:
 
 ```bash
@@ -203,14 +205,14 @@ All scripts: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unav
 ## Output Rules
 
 - **Attribution:** Prefix the answer with "以下分析来自Stocki："
-- **Present answers verbatim** — do not paraphrase, summarize, or editorialize
+- **Preserve the analysis content** — do not paraphrase, summarize, or editorialize the analytical conclusions
 - **Timezone:** Default is `Asia/Shanghai`; pass `--timezone` to change
 - **Language:** Respond in the user's language; label if Stocki's response is in a different language
 - You may add follow-up questions or context after presenting the answer
 
 ### Post-Processing (REQUIRED before replying to user)
 
-The scripts already do basic formatting. But you MUST review and clean up:
+The scripts convert Stocki's markdown output to WeChat-friendly plain text (strip markdown/HTML, convert links to footnotes). This is necessary because WeChat does not render markdown. After script output, you MUST still review and clean up:
 
 1. Check for any residual markdown or HTML — remove if present
 2. Ensure readability — break long paragraphs, keep it scannable on mobile
