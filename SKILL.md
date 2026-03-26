@@ -41,7 +41,9 @@ Two modes: **instant** for quick Q&A, and **task** for complex quantitative anal
 
 ## Setup
 
-No pip install needed. Set two environment variables:
+For detailed installation, configuration, verification, and update instructions, see [INSTALL.md](INSTALL.md).
+
+Quick setup — no pip install needed, set two environment variables:
 
 ```bash
 export STOCKI_GATEWAY_URL="https://api.stocki.com.cn"
@@ -295,21 +297,10 @@ For each complex task, create a local directory mirroring the remote task. Store
 
 ## Updates
 
-This skill is under active development. Check for new versions regularly:
+This skill is under active development. Check for new versions regularly. See [INSTALL.md](INSTALL.md) for all installation and update methods.
+
+Quick update:
 
 ```bash
 clawhub install stocki --force
-```
-
-If the ClawHub command fails, try SkillHub:
-
-```bash
-skillhub install stocki --force
-```
-
-If both fail, update from GitHub instead:
-
-```bash
-rm -rf ~/.openclaw/workspace/skills/stocki
-git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 clone https://github.com/stocki-ai/open-stocki.git ~/.openclaw/workspace/skills/stocki
 ```
