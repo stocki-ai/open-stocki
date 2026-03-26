@@ -65,8 +65,9 @@ This tests both instant and quant modes. All checks must pass before using the s
 | Signal | Mode | Action |
 |--------|------|--------|
 | Quick question, price check, brief explanation | **Instant** | Call `stocki-instant.py` directly |
-| "Analysis", backtesting, strategy, deep dive, quant | **Task** | Create task -> submit run -> poll -> get report |
-| Scheduled/periodic monitoring | **Task** | Create task -> submit runs on cron schedule |
+| "Analysis", backtesting, strategy, deep dive, quant | **Quant** | Call `stocki-run.py submit` (auto-creates task) |
+| Iterate on existing analysis | **Quant** | Call `stocki-run.py submit --task-id <id>` |
+| Scheduled/periodic monitoring | **Quant** | Submit runs on cron schedule |
 | Ambiguous | Ask user | "Do you want a quick answer or a full quantitative analysis?" |
 
 ---
@@ -87,70 +88,67 @@ python3 {baseDir}/scripts/stocki-instant.py "What's the outlook for US tech stoc
 
 ---
 
-## Task Mode (Quantitative Analysis)
+## Quant Mode (Quantitative Analysis)
 
-For complex analysis that takes minutes to complete. Follow this workflow:
+For complex analysis that takes minutes to complete. The Gateway auto-creates tasks — no manual task creation needed.
 
-### Step 1: Create a task
+> **Global serial constraint:** Only one quant run can execute at a time. If another is running, submission is rejected (429). Retry later.
+
+### Step 1: Submit a quant analysis
 
 ```bash
-python3 {baseDir}/scripts/stocki-task.py create "A股半导体行业分析"
-# Output: task_id, name, created_at
+python3 {baseDir}/scripts/stocki-run.py submit "回测CSI 300动量策略，近3年数据"
+# Output: task_id, task_name (auto-generated)
 ```
 
-Task naming: concise topic in the user's language, no dates. Must be unique per user.
-On `task_name_conflict`: suggest a more specific name or offer to resume existing task.
-
-### Step 2: Submit a quant run
+To iterate on an existing task, pass `--task-id`:
 
 ```bash
-python3 {baseDir}/scripts/stocki-run.py submit <task_id> "回测CSI 300动量策略，近3年数据"
-# Output: run_id, status (queued), queue_position
+python3 {baseDir}/scripts/stocki-run.py submit "增加小盘股过滤器" --task-id t_8f3a1b2c
 ```
 
-Surface `run_id` to user immediately after submission. Runs can take up to 30 minutes.
+Surface `task_id` to user immediately after submission. Runs can take up to 30 minutes.
 
-### Step 3: Automatic status polling
+### Step 2: Automatic status polling
 
-After submitting a run, set up a recurring check (every 30 seconds to 1 minute) to poll the run status:
+After submitting, set up a recurring check (every 30 seconds to 1 minute) to poll the task status:
 
 ```bash
-python3 {baseDir}/scripts/stocki-run.py status <task_id> <run_id>
-# Output: status (queued/running/success/error)
+python3 {baseDir}/scripts/stocki-task.py status <task_id>
+# Shows: current_run status, all runs with summaries/files
 ```
 
 Polling rules:
-- **queued/running:** Stay silent, do not notify user. Continue polling.
-- **success:** Stop polling. Process results (see Step 4). Notify user.
-- **error:** Stop polling. Report error message to user. Offer to resubmit.
+- **current_run is running/queued:** Stay silent, do not notify user. Continue polling.
+- **current_run is null and last run is success:** Stop polling. Process results (see Step 3). Notify user.
+- **last run is error:** Stop polling. Report error message to user. Offer to resubmit.
 
 Do NOT block the conversation waiting for the run to finish — set up the polling schedule and continue with other tasks.
 
-### Step 4: Process and deliver results
+### Step 3: Process and deliver results
 
-When a run succeeds, the status response includes a **summary**. Additionally, the task may have **reports** (markdown files) and **attachments** (images, charts).
+When a run succeeds, the task status response includes a **summary** and **file paths** for each run.
 
-1. **Get the summary** from `stocki-run.py status` response — this is a brief overview of the analysis
-2. **List reports:** `stocki-report.py list <task_id>` — check for markdown reports and image files
-3. **Download important files:** `stocki-report.py download <task_id> <filename>`
+1. **Get the summary** from `stocki-task.py status` response
+2. **List files:** `stocki-report.py list <task_id>` — shows files grouped by run
+3. **Download files:** `stocki-report.py download <task_id> <file_path>`
+
+```bash
+# Example workflow after success:
+python3 {baseDir}/scripts/stocki-report.py list <task_id>
+python3 {baseDir}/scripts/stocki-report.py download <task_id> runs/run_001/report.md --output ~/stocki/tasks/<task_name>/report.md
+python3 {baseDir}/scripts/stocki-report.py download <task_id> runs/run_001/images/chart_001.png --output ~/stocki/tasks/<task_name>/chart.png
+```
 
 **Delivering results to user:**
 - Organize the response based on the **summary** — present it as the main message
 - If there is a **report** (`.md` file), download it and include key findings in the message
 - If there are **images** (charts, plots), download them and send as attachments via WeChat
 - Keep the message concise; link to the full report if it is too long
-- Use the summary to structure the narrative, not just dump raw report content
-
-```bash
-# Example workflow after success:
-python3 {baseDir}/scripts/stocki-report.py list <task_id>
-python3 {baseDir}/scripts/stocki-report.py download <task_id> report.md --output ~/stocki/tasks/<task_name>/reports/report.md
-# Send summary + key findings + images to user via WeChat
-```
 
 ### Multi-run tasks
 
-A single task can have multiple runs (iterations). Each run builds on previous context. Use this for iterative refinement: "now try with different parameters", "add risk analysis", etc.
+A single task can have multiple runs (iterations). Each run builds on previous context. Use `--task-id` for iterative refinement: "now try with different parameters", "add risk analysis", etc.
 
 ---
 
@@ -158,10 +156,11 @@ A single task can have multiple runs (iterations). Each run builds on previous c
 
 OpenClaw can set up recurring tasks for periodic monitoring:
 
-1. Create a task for the monitoring topic: `stocki-task.py create "A股持仓日报"`
-2. Set up a cron job that periodically submits runs: `stocki-run.py submit <task_id> "analyze today's market movements and my portfolio impact"`
-3. On each cron trigger, check previous run status first; if still running, skip
-4. On success, present results to user; on running/queued, stay silent
+1. Submit initial analysis: `stocki-run.py submit "A股持仓日报"`— this auto-creates a task
+2. Note the returned `task_id`
+3. Set up a cron job that periodically submits runs: `stocki-run.py submit "analyze today's market movements" --task-id <task_id>`
+4. Before each submission, check task status first; if a run is still active, skip
+5. On success, present results to user; on running/queued, stay silent
 
 This enables use cases like: daily portfolio reviews, weekly sector reports, pre-market briefings.
 
@@ -172,16 +171,14 @@ This enables use cases like: daily portfolio reviews, weekly sector reports, pre
 | Script | Usage | Description | Timeout |
 |--------|-------|-------------|---------|
 | `stocki-instant.py` | `<question> [--timezone TZ]` | Quick financial Q&A | 120s |
-| `stocki-task.py` | `create <name> [--description]` | Create named task | 30s |
-| `stocki-task.py` | `list` | List all tasks | 30s |
-| `stocki-task.py` | `history <task_id> [--page N]` | Task conversation history | 300s |
-| `stocki-run.py` | `submit <task_id> <query> [--timezone TZ]` | Submit quant run | 30s |
-| `stocki-run.py` | `status <task_id> <run_id>` | Check run status | 120s |
-| `stocki-report.py` | `list <task_id>` | List task reports | 300s |
-| `stocki-report.py` | `download <task_id> <filename> [--output path]` | Download report | 300s |
+| `stocki-task.py` | `list` | List all quant tasks | 30s |
+| `stocki-task.py` | `status <task_id>` | Task details + all run statuses | 120s |
+| `stocki-run.py` | `submit <question> [--task-id ID] [--timezone TZ]` | Submit quant analysis (auto-creates task) | 30s |
+| `stocki-report.py` | `list <task_id>` | List result files by run | 120s |
+| `stocki-report.py` | `download <task_id> <file_path> [--output path]` | Download report or image | 300s |
 | `stocki-diagnose.py` | *(no args)* | Self-diagnostic: verify instant + quant | 120s |
 
-All scripts: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unavailable, Exit 3 = rate limited.
+All scripts: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unavailable, Exit 3 = rate limited/quota exceeded.
 
 ---
 
@@ -191,13 +188,12 @@ All scripts: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unav
 |------------|--------|
 | `auth_missing` | Tell user: `export STOCKI_API_KEY="sk_your_key_here"` and `export STOCKI_GATEWAY_URL="https://api.stocki.com.cn"` |
 | `auth_invalid` | API key may be wrong or expired; suggest contacting Stocki team |
+| `quota_exceeded` | Daily quota used up; show invite URL from details if available |
 | `stocki_unavailable` | Report outage; suggest retrying in a few minutes |
 | `task_not_found` | Run `stocki-task.py list` to find valid tasks |
-| `task_name_conflict` | Suggest a different, more specific name or offer to resume existing task |
-| `run_not_found` | Confirm task_id is correct; offer to resubmit |
 | `run_error` | Report error message verbatim; offer to resubmit |
 | `report_not_found` | No reports yet; suggest running a quant analysis first |
-| `rate_limited` | Wait; surface `retry_after` seconds if present |
+| `rate_limited` | Quant queue full or rate exceeded; wait and retry (surface `retry_after` if present) |
 | `timezone_invalid` | Retry with `--timezone Asia/Shanghai` |
 
 ---

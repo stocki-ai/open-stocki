@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Submit and check Stocki quant runs.
+Submit Stocki quant analysis.
 
 Usage:
-    python3 stocki-run.py submit <task_id> <query> [--timezone Asia/Shanghai]
-    python3 stocki-run.py status <task_id> <run_id>
+    python3 stocki-run.py submit <question> [--task-id TASK_ID] [--timezone Asia/Shanghai]
 
-Stdout: run info / status
+Stdout: task info
 Stderr: error messages
-Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited
+Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited/quota
 """
 
 import argparse
@@ -16,62 +15,30 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _gateway import format_for_wechat, gateway_request
+from _gateway import gateway_request
 
 
 def cmd_submit(args):
-    result = gateway_request(
-        "POST",
-        f"/v1/tasks/{args.task_id}/runs",
-        {"query": args.query, "timezone": args.timezone},
-        timeout=30,
-    )
-    print(f"run_id: {result.get('run_id', '')}")
-    print(f"status: {result.get('status', '')}")
-    pos = result.get("queue_position")
-    if pos is not None:
-        print(f"queue_position: {pos}")
+    body = {"question": args.question, "timezone": args.timezone}
+    if args.task_id:
+        body["task_id"] = args.task_id
 
-
-def cmd_status(args):
-    result = gateway_request(
-        "GET",
-        f"/v1/tasks/{args.task_id}/runs/{args.run_id}",
-        timeout=120,
-    )
-    status = result.get("status", "unknown")
-    print(f"status: {status}")
-
-    if status == "queued":
-        pos = result.get("queue_position")
-        if pos is not None:
-            print(f"queue_position: {pos}")
-    elif status == "error":
-        msg = result.get("message", "Unknown error")
-        print(f"error: {msg}", file=sys.stderr)
-        sys.exit(1)
-    elif status == "success":
-        answer = result.get("answer", "")
-        if answer:
-            print()
-            print(format_for_wechat(answer))
+    result = gateway_request("POST", "/v1/quant", body, timeout=30)
+    print(f"task_id: {result.get('task_id', '')}")
+    print(f"task_name: {result.get('task_name', '')}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Submit and check Stocki quant runs.")
+    parser = argparse.ArgumentParser(description="Submit Stocki quant analysis.")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_submit = sub.add_parser("submit", help="Submit a quant run")
-    p_submit.add_argument("task_id", help="Task ID (UUID)")
-    p_submit.add_argument("query", help="Analysis query")
+    p_submit = sub.add_parser("submit", help="Submit a quant analysis")
+    p_submit.add_argument("question", help="Analysis question")
+    p_submit.add_argument("--task-id", default=None, help="Existing task ID for iteration")
     p_submit.add_argument("--timezone", default="Asia/Shanghai", help="IANA timezone (default: Asia/Shanghai)")
 
-    p_status = sub.add_parser("status", help="Check run status")
-    p_status.add_argument("task_id", help="Task ID (UUID)")
-    p_status.add_argument("run_id", help="Run ID")
-
     args = parser.parse_args()
-    {"submit": cmd_submit, "status": cmd_status}[args.command](args)
+    {"submit": cmd_submit}[args.command](args)
 
 
 if __name__ == "__main__":

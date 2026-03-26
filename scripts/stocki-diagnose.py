@@ -6,8 +6,8 @@ Usage:
     python3 stocki-diagnose.py
 
 Runs two checks:
-  1. Instant mode — asks a simple financial question
-  2. Quant mode — creates a task, submits a run, waits for completion, downloads report
+  1. Instant mode — asks a verifiable factual question
+  2. Quant mode — submits analysis, waits for completion, checks results
 
 Exit:   0 all passed, 1 any check failed
 """
@@ -30,14 +30,13 @@ def check_instant():
         result = gateway_request(
             "POST",
             "/v1/instant",
-            {"query": "What is the ticker symbol of Apple Inc on NASDAQ?", "timezone": "Asia/Shanghai"},
+            {"question": "What is the ticker symbol of Apple Inc on NASDAQ?", "timezone": "Asia/Shanghai"},
             timeout=120,
         )
         answer = result.get("answer", "")
         if not answer:
             print("FAIL (empty answer)")
             return False
-        # Verify: answer must mention AAPL
         answer_upper = answer.upper()
         if "AAPL" in answer_upper:
             print(f"OK (verified AAPL in answer, {len(answer)} chars)")
@@ -52,83 +51,71 @@ def check_instant():
 
 
 def check_quant():
-    """Test quant mode: create task, submit run, wait for completion, download report."""
+    """Test quant mode: submit analysis, wait for completion, check results."""
     print("[2/2] Quant mode...")
-    task_name = f"_diagnose_{int(time.time())}"
     try:
-        # Step 1: Create task
-        print("  Creating task...", end=" ", flush=True)
-        task = gateway_request("POST", "/v1/tasks", {"name": task_name}, timeout=30)
-        task_id = task.get("task_id", "")
+        # Step 1: Submit quant analysis (auto-creates task)
+        print("  Submitting quant...", end=" ", flush=True)
+        result = gateway_request(
+            "POST",
+            "/v1/quant",
+            {"question": "What were the top 3 constituents of S&P 500 by market cap as of 2024-12-31? List their ticker symbols.", "timezone": "Asia/Shanghai"},
+            timeout=30,
+        )
+        task_id = result.get("task_id", "")
+        task_name = result.get("task_name", "")
         if not task_id:
             print("FAIL (no task_id)")
             return False
-        print(f"OK ({task_id[:8]}...)")
+        print(f"OK (task_id={task_id}, name={task_name})")
 
-        # Step 2: Submit run with a verifiable question pinned to a specific date
-        print("  Submitting run...", end=" ", flush=True)
-        run = gateway_request(
-            "POST",
-            f"/v1/tasks/{task_id}/runs",
-            {"query": "What were the top 3 constituents of S&P 500 by market cap as of 2024-12-31? List their ticker symbols.", "timezone": "Asia/Shanghai"},
-            timeout=30,
-        )
-        run_id = run.get("run_id", "")
-        if not run_id:
-            print("FAIL (no run_id)")
-            return False
-        print(f"OK ({run_id[:8] if len(run_id) > 8 else run_id}...)")
-
-        # Step 3: Poll until completion
+        # Step 2: Poll task status until completion
         print("  Waiting for completion", end="", flush=True)
         elapsed = 0
         final_status = ""
-        check = {}
+        task_detail = {}
         while elapsed < MAX_WAIT:
             time.sleep(POLL_INTERVAL)
             elapsed += POLL_INTERVAL
             print(".", end="", flush=True)
-            check = gateway_request("GET", f"/v1/tasks/{task_id}/runs/{run_id}", timeout=120)
-            final_status = check.get("status", "unknown")
-            if final_status in ("success", "error"):
-                break
+            task_detail = gateway_request("GET", f"/v1/tasks/{task_id}", timeout=120)
+            current_run = task_detail.get("current_run")
+            if current_run is None:
+                # No active run — check last run status
+                runs = task_detail.get("runs", [])
+                if runs:
+                    final_status = runs[-1].get("status", "unknown")
+                    if final_status in ("success", "error"):
+                        break
+            else:
+                final_status = current_run.get("status", "unknown")
 
         print()
         if final_status == "success":
             print(f"  Run completed: OK (success in {elapsed}s)")
         elif final_status == "error":
-            msg = check.get("message", "unknown error")
-            print(f"  Run completed: FAIL (error: {msg})")
+            runs = task_detail.get("runs", [])
+            err = runs[-1].get("error_message", "unknown") if runs else "unknown"
+            print(f"  Run completed: FAIL (error: {err})")
             return False
         else:
             print(f"  Run timeout: FAIL (still {final_status} after {MAX_WAIT}s)")
             return False
 
-        # Step 4: Check reports
-        print("  Checking reports...", end=" ", flush=True)
-        reports = gateway_request("GET", f"/v1/tasks/{task_id}/reports", timeout=300)
-        report_list = reports.get("reports", [])
-        if not report_list:
-            print("WARN (no reports, but run succeeded)")
-            return True
+        # Step 3: Verify results
+        runs = task_detail.get("runs", [])
+        last_run = runs[-1] if runs else {}
+        summary = last_run.get("summary", "")
+        files = last_run.get("files", [])
 
-        # Step 5: Download first report
-        first = report_list[0].get("filename", "")
-        print(f"OK ({len(report_list)} file(s))")
-        print(f"  Downloading '{first}'...", end=" ", flush=True)
-        dl = gateway_request("GET", f"/v1/tasks/{task_id}/reports/{first}", timeout=300)
-        content = dl.get("content", "")
-        if not content:
-            print("FAIL (empty content)")
-            return False
-        print(f"OK ({len(content)} chars)")
+        print(f"  Files: {len(files)}, Summary: {len(summary)} chars")
 
-        # Step 6: Verify answer correctness
+        # Step 4: Verify answer correctness
         # As of 2024-12-31, top S&P 500 by market cap: AAPL, MSFT, NVDA
         print("  Verifying answer...", end=" ", flush=True)
-        content_upper = content.upper()
+        check_text = (summary or "").upper()
         expected = ["AAPL", "MSFT", "NVDA"]
-        found = [s for s in expected if s in content_upper]
+        found = [s for s in expected if s in check_text]
         if len(found) >= 2:
             print(f"OK (found {', '.join(found)})")
         else:

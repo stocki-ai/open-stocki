@@ -2,7 +2,7 @@
 Shared HTTP helper for Stocki OpenClaw scripts.
 
 Reads STOCKI_GATEWAY_URL and STOCKI_API_KEY from environment.
-Provides gateway_request(), handle_error(), and format_for_wechat().
+Provides gateway_request(), gateway_request_raw(), handle_error(), and format_for_wechat().
 Uses only Python stdlib (urllib, json).
 """
 
@@ -45,6 +45,12 @@ def handle_error(code, message, details=None):
                 file=sys.stderr,
             )
         sys.exit(1)
+    elif code == "quota_exceeded":
+        print(f"Quota exceeded: {message}", file=sys.stderr)
+        invite = (details or {}).get("invite_url", "")
+        if invite:
+            print(f"Invite friends to get more quota: {invite}", file=sys.stderr)
+        sys.exit(3)
     elif code == "stocki_unavailable":
         print(f"Stocki unavailable: {message}", file=sys.stderr)
         sys.exit(2)
@@ -58,6 +64,20 @@ def handle_error(code, message, details=None):
     else:
         print(f"Error [{code}]: {message}", file=sys.stderr)
         sys.exit(1)
+
+
+def _handle_http_error(e):
+    """Parse HTTP error response and call handle_error."""
+    try:
+        err_body = json.loads(e.read().decode())
+        handle_error(
+            err_body.get("error", "unknown"),
+            err_body.get("message", str(e)),
+            err_body.get("details"),
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        print(f"HTTP {e.code}: {e.reason}", file=sys.stderr)
+        sys.exit(2 if e.code >= 500 else 1)
 
 
 def gateway_request(method, path, body=None, timeout=120):
@@ -75,19 +95,30 @@ def gateway_request(method, path, body=None, timeout=120):
             raw = resp.read().decode()
             return json.loads(raw) if raw else {}
     except HTTPError as e:
-        try:
-            err_body = json.loads(e.read().decode())
-            handle_error(
-                err_body.get("error", "unknown"),
-                err_body.get("message", str(e)),
-                err_body.get("details"),
-            )
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            print(f"HTTP {e.code}: {e.reason}", file=sys.stderr)
-            sys.exit(2 if e.code >= 500 else 1)
+        _handle_http_error(e)
     except (URLError, TimeoutError, OSError) as e:
         print(f"Stocki unavailable: {e}", file=sys.stderr)
         sys.exit(2)
+
+
+def gateway_request_raw(method, path, timeout=120):
+    """Make an HTTP request to the Gateway. Returns raw bytes and content-type."""
+    base_url, api_key = _env()
+    url = f"{base_url}{path}"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    req = Request(url, headers=headers, method=method)
+
+    try:
+        with urlopen(req, timeout=timeout) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+            raw = resp.read()
+            return raw, content_type
+    except HTTPError as e:
+        _handle_http_error(e)
+    except (URLError, TimeoutError, OSError) as e:
+        print(f"Stocki unavailable: {e}", file=sys.stderr)
+        sys.exit(2)
+
 
 def format_for_wechat(text):
     """Convert Stocki markdown output to WeChat-friendly plain text."""

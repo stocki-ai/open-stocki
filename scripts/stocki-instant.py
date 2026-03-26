@@ -7,7 +7,7 @@ Usage:
 
 Stdout: formatted answer
 Stderr: error messages
-Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited
+Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited/quota
 """
 
 import argparse
@@ -31,7 +31,7 @@ def main():
     result = gateway_request(
         "POST",
         "/v1/instant",
-        {"query": args.question, "timezone": args.timezone},
+        {"question": args.question, "timezone": args.timezone},
         timeout=120,
     )
 

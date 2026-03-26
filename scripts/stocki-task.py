@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-Manage Stocki quant tasks.
+List and inspect Stocki quant tasks.
 
 Usage:
-    python3 stocki-task.py create <name> [--description "..."]
     python3 stocki-task.py list
-    python3 stocki-task.py history <task_id> [--page 1]
+    python3 stocki-task.py status <task_id>
 
 Stdout: task info
 Stderr: error messages
-Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited
+Exit:   0 success, 1 auth/client error, 2 service error, 3 rate limited/quota
 """
 
 import argparse
@@ -20,67 +19,62 @@ sys.path.insert(0, os.path.dirname(__file__))
 from _gateway import gateway_request
 
 
-def cmd_create(args):
-    body = {"name": args.name}
-    if args.description:
-        body["description"] = args.description
-    result = gateway_request("POST", "/v1/tasks", body, timeout=30)
-    if not result.get("task_id"):
-        print("Error: unexpected response from server", file=sys.stderr)
-        sys.exit(1)
-    print(f"task_id: {result.get('task_id', '')}")
-    print(f"name: {result.get('name', '')}")
-    print(f"created_at: {result.get('created_at', '')}")
-
-
 def cmd_list(_args):
-    tasks = gateway_request("GET", "/v1/tasks", timeout=30)
+    result = gateway_request("GET", "/v1/tasks", timeout=30)
+    tasks = result.get("tasks", [])
     if not tasks:
         print("No tasks found.")
         return
-    # Print as aligned table
-    print(f"{'Name':<40} {'Task ID':<40} {'Updated':<24} {'Msgs':>4}")
-    print("-" * 112)
+    print(f"{'Name':<40} {'Task ID':<16} {'Updated':<24} {'Msgs':>4}")
+    print("-" * 88)
     for t in tasks:
         name = t.get("name", "")[:38]
         tid = t.get("task_id", "")
         updated = t.get("updated_at", "")[:19]
         msgs = t.get("message_count", 0)
-        print(f"{name:<40} {tid:<40} {updated:<24} {msgs:>4}")
+        print(f"{name:<40} {tid:<16} {updated:<24} {msgs:>4}")
 
 
-def cmd_history(args):
-    path = f"/v1/tasks/{args.task_id}"
-    if args.page:
-        path += f"?page={args.page}"
-    result = gateway_request("GET", path, timeout=300)
-    print(f"Task: {result.get('name', '')}  (page {result.get('page', 1)}/{result.get('total_pages', 1)})")
-    print()
-    for msg in result.get("messages", []):
-        role = msg.get("role", "unknown").upper()
-        ts = msg.get("timestamp", "")[:19]
-        content = msg.get("content", "")
-        print(f"[{role}] {ts}")
-        print(content)
-        print()
+def cmd_status(args):
+    result = gateway_request("GET", f"/v1/tasks/{args.task_id}", timeout=120)
+    name = result.get("name", "")
+    print(f"Task: {name} ({args.task_id})")
+
+    current = result.get("current_run")
+    if current:
+        print(f"\nCurrent run: {current.get('run_id', '')} [{current.get('status', '')}]")
+        print(f"  Query: {current.get('query', '')}")
+
+    runs = result.get("runs", [])
+    if runs:
+        print(f"\nRuns ({len(runs)}):")
+        for r in runs:
+            status = r.get("status", "")
+            rid = r.get("run_id", "")
+            query = r.get("query", "")[:60]
+            summary = r.get("summary") or ""
+            err = r.get("error_message") or ""
+            print(f"  [{status}] {rid}: {query}")
+            if summary:
+                print(f"    Summary: {summary[:120]}")
+            if err:
+                print(f"    Error: {err}")
+            files = r.get("files", [])
+            if files:
+                print(f"    Files: {', '.join(files)}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Manage Stocki quant tasks.")
+    parser = argparse.ArgumentParser(description="List and inspect Stocki quant tasks.")
     sub = parser.add_subparsers(dest="command", required=True)
-
-    p_create = sub.add_parser("create", help="Create a new task")
-    p_create.add_argument("name", help="Task name (must be unique)")
-    p_create.add_argument("--description", default="", help="Optional description")
 
     sub.add_parser("list", help="List all tasks")
 
-    p_history = sub.add_parser("history", help="Show task conversation history")
-    p_history.add_argument("task_id", help="Task ID (UUID)")
-    p_history.add_argument("--page", type=int, default=None, help="Page number (default: 1)")
+    p_status = sub.add_parser("status", help="Show task details and run status")
+    p_status.add_argument("task_id", help="Task ID")
 
     args = parser.parse_args()
-    {"create": cmd_create, "list": cmd_list, "history": cmd_history}[args.command](args)
+    {"list": cmd_list, "status": cmd_status}[args.command](args)
 
 
 if __name__ == "__main__":
