@@ -1,73 +1,71 @@
-# OpenStocki Gateway API 接口文档
+# OpenStocki Gateway API Reference
 
 **Base URL:** `https://api.stocki.com.cn`
 
-## 1. 通用约定
+## 1. General Conventions
 
-### 鉴权
+### Authentication
 
-所有需要鉴权的接口使用统一的 Bearer Token 方式：
+All authenticated endpoints use Bearer Token:
 
 ```
 Authorization: Bearer <token>
 ```
 
-Token 由用户在 H5 管理页生成，格式为 `sk_` 前缀 + 随机字符串（如 `sk_abc123def456...`）。
+Token types:
+- **API Key**: `sk_` prefix, for `/v1/*` business endpoints
+- **Session Token**: `sess_` prefix, for `/user/*` management endpoints (via WeChat OAuth)
 
-Token 类型：
-- **API Key**: `sk_` 前缀，用于 `/v1/*` 业务接口
-- **Session Token**: `sess_` 前缀，用于 `/user/*` 用户管理接口，通过微信 OAuth 登录获取
-
-| 适用范围 | 说明 |
+| Scope | Auth |
 |---|---|
-| `/v1/*` 业务接口 | 需要 API Key（`sk_xxx`） |
-| `/user/*` 用户管理接口 | 需要 Session Token（`sess_xxx`） |
-| `/auth/*` 微信登录接口 | 无需鉴权 |
-| `/share/{id}` 公开分享页 | 无需鉴权 |
+| `/v1/*` business API | API Key (`sk_xxx`) |
+| `/user/*` user management | Session Token (`sess_xxx`) |
+| `/auth/*` WeChat login | No auth required |
+| `/share/{id}` public share page | No auth required |
 
-### 通用请求头
+### Common Headers
 
 ```
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
 
-### 错误响应格式
+### Error Response Format
 
-所有错误响应遵循统一信封结构：
+All errors follow a standard envelope:
 
 ```json
 {
   "error": "<machine-readable-code>",
-  "message": "人类可读的错误说明",
+  "message": "Human-readable error description",
   "details": {}
 }
 ```
 
-### 错误码表
+### Error Codes
 
-| 错误码 | HTTP 状态码 | 说明 |
+| Error Code | HTTP Status | Description |
 |---|---|---|
-| `auth_missing` | 401 | 未提供鉴权凭证 |
-| `auth_invalid` | 401 | 凭证无效或已过期 |
-| `quota_exceeded` | 403 | 今日额度已用完 |
-| `task_not_found` | 404 | task_id 不存在 |
-| `run_not_found` | 404 | run_id 不存在 |
-| `run_error` | 200 | Quant 运行失败（在 status response body 中，非 HTTP 错误） |
-| `report_not_found` | 404 | 报告文件不存在 |
-| `rate_limited` | 429 | 请求频率超限（`details` 含 `retry_after`）；或全局 quant 队列满 |
-| `timezone_invalid` | 400 | 非法 IANA 时区名称 |
-| `stocki_unavailable` | 503 | 后端分析服务不可用 |
+| `auth_missing` | 401 | No auth credentials provided |
+| `auth_invalid` | 401 | Credentials invalid or expired |
+| `quota_exceeded` | 403 | Daily quota exhausted |
+| `task_not_found` | 404 | task_id does not exist |
+| `run_not_found` | 404 | run_id does not exist |
+| `run_error` | 200 | Quant run failed (in status response body, not HTTP error) |
+| `report_not_found` | 404 | Report file does not exist |
+| `rate_limited` | 429 | Rate exceeded (`details` contains `retry_after`); or global quant queue full |
+| `timezone_invalid` | 400 | Invalid IANA timezone name |
+| `stocki_unavailable` | 503 | Backend analysis service unavailable |
 
 ---
 
-## 2. 业务 API（/v1）
+## 2. Business API (/v1)
 
 ### POST /v1/instant
 
-提交即时查询。同步阻塞，超时 120 秒。
+Submit an instant query. Synchronous, blocks until response. Timeout: 120s.
 
-**请求：**
+**Request:**
 
 ```json
 POST /v1/instant
@@ -75,23 +73,23 @@ Authorization: Bearer sk_abc123def456
 Content-Type: application/json
 
 {
-  "question": "A股半导体行业前景如何？",
+  "question": "What is the outlook for A-share semiconductor sector?",
   "timezone": "Asia/Shanghai"
 }
 ```
 
-| 参数 | 类型 | 必填 | 说明 |
+| Parameter | Type | Required | Description |
 |---|---|---|---|
-| `question` | string | 是 | 查询内容 |
-| `timezone` | string | 否 | IANA 时区名，默认 `"Asia/Shanghai"` |
+| `question` | string | yes | Query content |
+| `timezone` | string | no | IANA timezone, default `"Asia/Shanghai"` |
 
-**成功响应：**
+**Success Response:**
 
 ```json
 HTTP/1.1 200 OK
 
 {
-  "answer": "## A股半导体行业前景分析\n\n### 当前市场表现\n半导体板块近期受益于国产替代加速...",
+  "answer": "## A-Share Semiconductor Analysis\n\n...",
   "share_url": "https://stocki.com.cn/s/x7k9m2",
   "usage": {
     "used_today": 3,
@@ -100,22 +98,22 @@ HTTP/1.1 200 OK
 }
 ```
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |---|---|---|
-| `answer` | string | Markdown 格式的回答 |
-| `share_url` | string | 自动生成的分享短链接 |
-| `usage.used_today` | int | 今日已用次数 |
-| `usage.daily_quota` | int | 每日总额度 |
+| `answer` | string | Markdown-formatted answer |
+| `share_url` | string | Auto-generated share short link |
+| `usage.used_today` | int | Queries used today |
+| `usage.daily_quota` | int | Total daily quota |
 
-**错误响应示例：**
+**Error Examples:**
 
 ```json
-// 额度不足
+// Quota exceeded
 HTTP/1.1 403 Forbidden
 
 {
   "error": "quota_exceeded",
-  "message": "今日免费查询次数已用完",
+  "message": "Daily free query limit reached",
   "details": {
     "used_today": 8,
     "daily_quota": 8,
@@ -125,12 +123,12 @@ HTTP/1.1 403 Forbidden
 ```
 
 ```json
-// 服务不可用
+// Service unavailable
 HTTP/1.1 503 Service Unavailable
 
 {
   "error": "stocki_unavailable",
-  "message": "分析服务暂时不可用，请稍后重试",
+  "message": "Analysis service temporarily unavailable, please retry later",
   "details": {}
 }
 ```
@@ -139,16 +137,16 @@ HTTP/1.1 503 Service Unavailable
 
 ### POST /v1/quant
 
-提交异步量化分析。立即返回，不阻塞。
+Submit async quantitative analysis. Returns immediately, does not block.
 
-- 不传 `task_id`：Gateway 自动创建新 task 并提交首次 run
-- 传 `task_id`：向已有 task 追加新 run（迭代分析）
+- Without `task_id`: Gateway auto-creates a new task and submits the first run
+- With `task_id`: Appends a new run to an existing task (iterative analysis)
 
-Gateway 根据 `question` 自动生成 `task_name`。
+Gateway auto-generates `task_name` from the `question`.
 
-> **全局串行约束：** 同一时间只允许一个 quant run 运行。如果已有运行中的 quant，新提交会被拒绝（429），而非排队等待。
+> **Global serial constraint:** Only one quant run can execute at a time. If another is already running, the new submission is rejected (429), not queued.
 
-**请求（新任务）：**
+**Request (new task):**
 
 ```json
 POST /v1/quant
@@ -156,12 +154,12 @@ Authorization: Bearer sk_abc123def456
 Content-Type: application/json
 
 {
-  "question": "回测沪深300动量策略，回看期60天，2024年至今",
+  "question": "Backtest CSI 300 momentum strategy, lookback 60 days, 2024 to present",
   "timezone": "Asia/Shanghai"
 }
 ```
 
-**请求（追加迭代）：**
+**Request (iterate on existing task):**
 
 ```json
 POST /v1/quant
@@ -169,54 +167,43 @@ Authorization: Bearer sk_abc123def456
 Content-Type: application/json
 
 {
-  "question": "增加小盘股过滤器，回看期改为90天",
+  "question": "Add small-cap filter, change lookback to 90 days",
   "task_id": "t_8f3a1b2c",
   "timezone": "Asia/Shanghai"
 }
 ```
 
-| 参数 | 类型 | 必填 | 说明 |
+| Parameter | Type | Required | Description |
 |---|---|---|---|
-| `question` | string | 是 | 分析问题 |
-| `task_id` | string | 否 | 已有任务 ID；不传则自动创建新 task |
-| `timezone` | string | 否 | IANA 时区名，默认 `"Asia/Shanghai"` |
+| `question` | string | yes | Analysis question |
+| `task_id` | string | no | Existing task ID; omit to auto-create new task |
+| `timezone` | string | no | IANA timezone, default `"Asia/Shanghai"` |
 
-**成功响应（新任务）：**
-
-```json
-HTTP/1.1 201 Created
-
-{
-  "task_id": "t_8f3a1b2c",
-  "task_name": "A股动量策略回测"
-}
-```
-
-**成功响应（追加迭代）：**
+**Success Response:**
 
 ```json
 HTTP/1.1 201 Created
 
 {
   "task_id": "t_8f3a1b2c",
-  "task_name": "A股动量策略回测"
+  "task_name": "CSI 300 Momentum Backtest"
 }
 ```
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |---|---|---|
-| `task_id` | string | 任务 ID（新建或已有） |
-| `task_name` | string | 任务名称（新建时自动生成，已有时返回原名称） |
+| `task_id` | string | Task ID (new or existing) |
+| `task_name` | string | Task name (auto-generated for new, existing name for iterations) |
 
-**错误响应示例：**
+**Error Examples:**
 
 ```json
-// 全局 quant 队列满
+// Global quant queue full
 HTTP/1.1 429 Too Many Requests
 
 {
   "error": "rate_limited",
-  "message": "已有量化分析正在运行，请稍后重试",
+  "message": "A quant analysis is already running, please retry later",
   "details": {
     "retry_after": 60,
     "active_task_id": "t_other123",
@@ -226,12 +213,12 @@ HTTP/1.1 429 Too Many Requests
 ```
 
 ```json
-// 额度不足
+// Quota exceeded
 HTTP/1.1 403 Forbidden
 
 {
   "error": "quota_exceeded",
-  "message": "今日额度已用完",
+  "message": "Daily quota exhausted",
   "details": {
     "used_today": 8,
     "daily_quota": 8,
@@ -241,12 +228,12 @@ HTTP/1.1 403 Forbidden
 ```
 
 ```json
-// task_id 不存在
+// task_id not found
 HTTP/1.1 404 Not Found
 
 {
   "error": "task_not_found",
-  "message": "任务不存在",
+  "message": "Task does not exist",
   "details": {}
 }
 ```
@@ -255,16 +242,16 @@ HTTP/1.1 404 Not Found
 
 ### GET /v1/tasks
 
-列出当前用户的所有量化任务，按最近更新时间倒序。
+List all quant tasks for the authenticated user, sorted by most recently updated.
 
-**请求：**
+**Request:**
 
 ```
 GET /v1/tasks
 Authorization: Bearer sk_abc123def456
 ```
 
-**成功响应：**
+**Success Response:**
 
 ```json
 HTTP/1.1 200 OK
@@ -273,78 +260,66 @@ HTTP/1.1 200 OK
   "tasks": [
     {
       "task_id": "t_8f3a1b2c",
-      "name": "A股动量策略回测",
+      "name": "CSI 300 Momentum Backtest",
       "description": null,
       "created_at": "2026-03-23T14:30:00+08:00",
       "updated_at": "2026-03-23T15:45:00+08:00",
       "message_count": 4
-    },
-    {
-      "task_id": "t_5e2d1a0b",
-      "name": "US Macro Outlook",
-      "description": "2026 Q1 美国宏观经济展望",
-      "created_at": "2026-03-20T09:00:00+08:00",
-      "updated_at": "2026-03-21T10:30:00+08:00",
-      "message_count": 6
     }
   ]
 }
 ```
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |---|---|---|
-| `tasks[].task_id` | string | 任务 ID |
-| `tasks[].name` | string | 任务名称 |
-| `tasks[].description` | string? | 描述，可为 null |
-| `tasks[].created_at` | string | ISO-8601 创建时间 |
-| `tasks[].updated_at` | string | ISO-8601 最近更新时间 |
-| `tasks[].message_count` | int | 消息数（human + ai） |
+| `tasks[].task_id` | string | Task ID |
+| `tasks[].name` | string | Task name |
+| `tasks[].description` | string? | Description, may be null |
+| `tasks[].created_at` | string | ISO-8601 creation time |
+| `tasks[].updated_at` | string | ISO-8601 last update time |
+| `tasks[].message_count` | int | Message count (human + ai) |
 
-**无任务时返回空数组：**
+**Empty response:**
 
 ```json
-HTTP/1.1 200 OK
-
-{
-  "tasks": []
-}
+{ "tasks": [] }
 ```
 
 ---
 
 ### GET /v1/tasks/{task_id}
 
-查询任务详情和运行状态。
+Get task details and run statuses.
 
-**请求：**
+**Request:**
 
 ```
 GET /v1/tasks/t_8f3a1b2c
 Authorization: Bearer sk_abc123def456
 ```
 
-**成功响应（有运行中的 run）：**
+**Success Response (with active run):**
 
 ```json
 HTTP/1.1 200 OK
 
 {
   "task_id": "t_8f3a1b2c",
-  "name": "A股动量策略回测",
+  "name": "CSI 300 Momentum Backtest",
   "created_at": "2026-03-23T14:30:00+08:00",
   "updated_at": "2026-03-23T15:45:00+08:00",
   "current_run": {
     "run_id": "run_002",
-    "query": "增加小盘股过滤器，回看期改为90天",
+    "query": "Add small-cap filter, change lookback to 90 days",
     "status": "running",
     "started_at": "2026-03-23T15:40:00+08:00"
   },
   "runs": [
     {
       "run_id": "run_001",
-      "query": "回测沪深300动量策略，回看期60天，2024年至今",
+      "query": "Backtest CSI 300 momentum strategy, lookback 60 days",
       "status": "success",
-      "summary": "沪深300动量策略年化收益18.3%，夏普比率1.2，最大回撤-15%",
+      "summary": "CSI 300 momentum strategy: 18.3% annualized return, Sharpe 1.2, max drawdown -15%",
       "started_at": "2026-03-23T14:30:00+08:00",
       "completed_at": "2026-03-23T15:00:00+08:00",
       "error_message": null,
@@ -357,7 +332,7 @@ HTTP/1.1 200 OK
     },
     {
       "run_id": "run_002",
-      "query": "增加小盘股过滤器，回看期改为90天",
+      "query": "Add small-cap filter, change lookback to 90 days",
       "status": "running",
       "summary": null,
       "started_at": "2026-03-23T15:40:00+08:00",
@@ -370,109 +345,55 @@ HTTP/1.1 200 OK
 }
 ```
 
-**成功响应（run 失败）：**
-
-```json
-HTTP/1.1 200 OK
-
-{
-  "task_id": "t_8f3a1b2c",
-  "name": "A股动量策略回测",
-  "created_at": "2026-03-23T14:30:00+08:00",
-  "updated_at": "2026-03-23T16:00:00+08:00",
-  "current_run": null,
-  "runs": [
-    {
-      "run_id": "run_003",
-      "query": "使用无效参数进行回测",
-      "status": "error",
-      "summary": null,
-      "started_at": "2026-03-23T15:50:00+08:00",
-      "completed_at": "2026-03-23T16:00:00+08:00",
-      "error_message": "回测参数无效：回看期不能为负数",
-      "report": null,
-      "files": []
-    }
-  ]
-}
-```
-
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |---|---|---|
-| `task_id` | string | 任务 ID |
-| `name` | string | 任务名称 |
-| `created_at` | string | ISO-8601 创建时间 |
-| `updated_at` | string | ISO-8601 更新时间 |
-| `current_run` | object? | 当前运行中的 run，无则为 null |
-| `runs[]` | array | 全部 run 列表 |
-| `runs[].run_id` | string | 运行 ID |
-| `runs[].query` | string | 查询内容 |
+| `task_id` | string | Task ID |
+| `name` | string | Task name |
+| `created_at` | string | ISO-8601 creation time |
+| `updated_at` | string | ISO-8601 update time |
+| `current_run` | object? | Currently active run, null if none |
+| `runs[]` | array | All runs for this task |
+| `runs[].run_id` | string | Run ID |
+| `runs[].query` | string | Query content |
 | `runs[].status` | string | `"queued"` / `"running"` / `"success"` / `"error"` |
-| `runs[].summary` | string? | 结果摘要（成功时有值） |
-| `runs[].started_at` | string | ISO-8601 开始时间 |
-| `runs[].completed_at` | string? | ISO-8601 完成时间，未完成为 null |
-| `runs[].error_message` | string? | 错误信息（status=error 时有值） |
-| `runs[].report` | string? | 主报告 COS 路径 |
-| `runs[].files` | array | 结果文件路径列表 |
-
-**错误响应：**
-
-```json
-HTTP/1.1 404 Not Found
-
-{
-  "error": "task_not_found",
-  "message": "任务不存在",
-  "details": {}
-}
-```
+| `runs[].summary` | string? | Result summary (present on success) |
+| `runs[].started_at` | string | ISO-8601 start time |
+| `runs[].completed_at` | string? | ISO-8601 completion time, null if not finished |
+| `runs[].error_message` | string? | Error message (present when status=error) |
+| `runs[].report` | string? | Main report COS path |
+| `runs[].files` | array | Result file path list |
 
 ---
 
 ### GET /v1/tasks/{task_id}/files/{path}
 
-下载任务结果文件（报告、图表等）。Gateway 从 Tencent COS 代理返回。
+Download task result files (reports, charts). Gateway proxies from Tencent COS.
 
-**请求（Markdown 报告）：**
+**Request (markdown report):**
 
 ```
 GET /v1/tasks/t_8f3a1b2c/files/runs/run_001/report.md
 Authorization: Bearer sk_abc123def456
 ```
 
-**成功响应：**
+**Success Response:**
 
 ```
 HTTP/1.1 200 OK
 Content-Type: text/markdown; charset=utf-8
 
-# 沪深300动量策略回测报告
-
-## 策略参数
-- 标的：沪深300成分股
-- 回看期：60天
-- 回测区间：2024-01-01 至 2026-03-23
-
-## 回测结果
-| 指标 | 值 |
-|---|---|
-| 年化收益率 | 18.3% |
-| 夏普比率 | 1.2 |
-| 最大回撤 | -15.2% |
-| 胜率 | 58.7% |
-
-## 收益曲线
-![收益曲线](images/chart_001.png)
+# CSI 300 Momentum Strategy Backtest Report
+...
 ```
 
-**请求（图片文件）：**
+**Request (image file):**
 
 ```
 GET /v1/tasks/t_8f3a1b2c/files/runs/run_001/images/chart_001.png
 Authorization: Bearer sk_abc123def456
 ```
 
-**成功响应：**
+**Success Response:**
 
 ```
 HTTP/1.1 200 OK
@@ -482,82 +403,82 @@ Content-Length: 45678
 <binary PNG data>
 ```
 
-**错误响应：**
+**Error Response:**
 
 ```json
 HTTP/1.1 404 Not Found
 
 {
   "error": "report_not_found",
-  "message": "文件 'runs/run_001/report.md' 不存在",
+  "message": "File 'runs/run_001/report.md' does not exist",
   "details": {}
 }
 ```
 
 ---
 
-## 3. 用户 API（/user）
+## 3. User API (/user)
 
-### `GET /user/me`
+### GET /user/me
 
-获取当前用户信息（需要 Session Token 鉴权）。
+Get current user info (requires Session Token).
 
-**响应 200：**
+**Response 200:**
 ```json
 {
   "id": "u_abc123",
-  "nickname": "微信用户昵称",
+  "nickname": "WeChat Username",
   "avatar_url": "https://...",
   "api_key": "sk_test1234..."
 }
 ```
 
-`api_key` 为遮罩显示（前缀 + `...`），完整 Key 仅在创建时展示一次。
+`api_key` is masked (prefix + `...`). Full key is only shown once at creation.
 
 ---
 
-## 4. 微信登录 API（/auth/wechat）
+## 4. WeChat Login API (/auth/wechat)
 
-### `POST /auth/wechat/mp/login`
+### POST /auth/wechat/mp/login
 
-公众号 OAuth 登录（微信内浏览器）。无需鉴权。
+WeChat Official Account OAuth login (in-app browser). No auth required.
 
-**请求：**
+**Request:**
 ```json
 {
-  "code": "微信回调的授权 code"
+  "code": "WeChat callback authorization code"
 }
 ```
 
-**响应 200：**
+**Response 200:**
 ```json
 {
   "session_token": "sess_xxx",
   "user": {
     "id": "u_xxx",
-    "nickname": "微信昵称",
-    "avatar_url": "头像 URL"
+    "nickname": "WeChat Nickname",
+    "avatar_url": "Avatar URL"
   },
-  "api_key": "sk_xxx（仅首次注册时返回完整值，否则为 null）",
+  "api_key": "sk_xxx (full value only on first registration, otherwise null)",
   "is_new_user": true
 }
 ```
 
-### `POST /auth/wechat/open/login`
+### POST /auth/wechat/open/login
 
-开放平台 OAuth 登录（微信外扫码）。请求/响应格式同 `/auth/wechat/mp/login`，区别在于使用开放平台 AppID/AppSecret。
+Open Platform OAuth login (QR code scan outside WeChat). Same request/response format as `/auth/wechat/mp/login`, uses Open Platform AppID/AppSecret.
 
-**错误码：**
+**Error Codes:**
 
-| 错误码 | HTTP 状态码 | 说明 |
+| Error Code | HTTP Status | Description |
 |--------|-------------|------|
-| `wechat_code_invalid` | 400 | 微信授权码无效或已过期 |
-| `wechat_unavailable` | 503 | 微信服务异常 |
-| `wechat_unionid_missing` | 400 | 无法获取 unionid |
-| `session_expired` | 401 | Session 已过期，需重新登录 |
+| `wechat_code_invalid` | 400 | WeChat authorization code invalid or expired |
+| `wechat_unavailable` | 503 | WeChat service error |
+| `wechat_unionid_missing` | 400 | Cannot obtain unionid |
+| `session_expired` | 401 | Session expired, re-login required |
 
 ---
 
-## 5. 分享 API（/share）
+## 5. Share API (/share)
 
-> **待定** — 分享相关接口设计中，后续补充。
+> **Pending** — Share-related endpoints are under design.
