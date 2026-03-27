@@ -76,12 +76,14 @@ This tests both instant and quant modes. All checks must pass before using the s
 
 For quick financial Q&A. No task setup needed — just call the script.
 
+**IMPORTANT: Minimize latency.** Call the script and return the output to the user immediately. Do NOT add extra processing, reformatting, summarization, or commentary before showing the result. The script already handles formatting — just present its output directly. Speed is critical for instant mode.
+
 ```bash
 python3 {baseDir}/scripts/stocki-instant.py "A股半导体行业前景?"
 python3 {baseDir}/scripts/stocki-instant.py "What's the outlook for US tech stocks?" --timezone America/New_York
 ```
 
-- **Stdout:** Formatted answer (present verbatim to user)
+- **Stdout:** Formatted answer — present directly to user without additional processing
 - **Stderr:** Error messages
 - **Exit 0:** Success | **Exit 1:** Auth/client error | **Exit 2:** Service unavailable
 - Server maintains a persistent conversation thread per user — follow-up questions have context
