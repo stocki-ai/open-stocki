@@ -91,53 +91,52 @@ For quick financial Q&A. No task setup needed — just call the command.
 
 ## Quant Mode (Quantitative Analysis)
 
-For complex analysis that takes minutes to complete. Tasks are auto-created — no manual setup needed.
+For complex analysis that takes minutes to complete. Each quant submission creates or extends an analysis (identified by an `id`). No manual setup needed.
 
-> **Global serial constraint:** Only one quant run can execute at a time. If another is running, submission is rejected. Retry later.
+> **Global serial constraint:** Only one quant analysis can run at a time. If another is running, submission is rejected. Retry later.
 
 ### Step 1: Submit a quant analysis
 
 ```bash
 {baseDir}/scripts/stocki quant "回测CSI 300动量策略，近3年数据"
-# Output: task_id, task_name (auto-generated)
+# Output: id, name (auto-generated)
 ```
 
-To iterate on an existing task:
+To iterate on an existing analysis:
 
 ```bash
-{baseDir}/scripts/stocki quant "增加小盘股过滤器" --task-id <task_id>
+{baseDir}/scripts/stocki quant "增加小盘股过滤器" --task-id <id>
 ```
 
-Surface `task_id` to user immediately after submission. Runs can take up to 30 minutes.
+Surface `id` to user immediately after submission. Analysis can take up to 30 minutes.
 
 ### Step 2: Automatic status polling
 
-After submitting, set up a recurring check (every 30 seconds to 1 minute) to poll the task status:
+After submitting, set up a recurring check (every 30 seconds to 1 minute) to poll the status:
 
 ```bash
-{baseDir}/scripts/stocki status <task_id>
-# Shows: current_run status, all runs with summaries/files
+{baseDir}/scripts/stocki status <id>
 ```
 
 Polling rules:
-- **current_run is running/queued:** Stay silent, do not notify user. Continue polling.
-- **current_run is null and last run is success:** Stop polling. Process results (see Step 3). Notify user.
-- **last run is error:** Stop polling. Report error message to user. Offer to resubmit.
+- **Running/queued:** Stay silent, do not notify user. Continue polling.
+- **Success:** Stop polling. Process results (see Step 3). Notify user.
+- **Error:** Stop polling. Report error message to user. Offer to resubmit.
 
-Do NOT block the conversation waiting for the run to finish — set up the polling schedule and continue with other tasks.
+Do NOT block the conversation waiting for the analysis to finish — set up the polling schedule and continue with other work.
 
 ### Step 3: Process and deliver results
 
-When a run succeeds, the status output includes a **summary** and **file paths** for each run.
+When an analysis succeeds, the status output includes a **summary** and **file paths**.
 
 1. **Get the summary** from `stocki status` output
-2. **List files:** `stocki files <task_id>` — shows files grouped by run
-3. **Download files:** `stocki download <task_id> <file_path>`
+2. **List files:** `stocki files <id>`
+3. **Download files:** `stocki download <id> <file_path>`
 
 ```bash
-{baseDir}/scripts/stocki files <task_id>
-{baseDir}/scripts/stocki download <task_id> runs/run_001/report.md --output ~/stocki/tasks/<task_name>/report.md
-{baseDir}/scripts/stocki download <task_id> runs/run_001/images/chart_001.png --output ~/stocki/tasks/<task_name>/chart.png
+{baseDir}/scripts/stocki files <id>
+{baseDir}/scripts/stocki download <id> runs/run_001/report.md --output ~/stocki/quant/<name>/report.md
+{baseDir}/scripts/stocki download <id> runs/run_001/images/chart_001.png --output ~/stocki/quant/<name>/chart.png
 ```
 
 **Delivering results to user:**
@@ -146,20 +145,20 @@ When a run succeeds, the status output includes a **summary** and **file paths**
 - If there are **images** (charts, plots), download them and send as attachments via WeChat
 - Keep the message concise; link to the full report if it is too long
 
-### Multi-run tasks
+### Iterative analysis
 
-A single task can have multiple runs (iterations). Each run builds on previous context. Use `--task-id` for iterative refinement: "now try with different parameters", "add risk analysis", etc.
+A single quant analysis can have multiple rounds (iterations). Each round builds on previous context. Use `--task-id` for iterative refinement: "now try with different parameters", "add risk analysis", etc.
 
 ---
 
 ## Scheduled Monitoring
 
-OpenClaw can set up recurring tasks for periodic monitoring:
+OpenClaw can set up recurring quant analyses for periodic monitoring:
 
-1. Submit initial analysis: `stocki quant "A股持仓日报"` — this auto-creates a task
-2. Note the returned `task_id`
-3. Set up a cron job that periodically submits runs: `stocki quant "analyze today's market movements" --task-id <task_id>`
-4. Before each submission, check task status first; if a run is still active, skip
+1. Submit initial analysis: `stocki quant "A股持仓日报"` — auto-creates an analysis
+2. Note the returned `id`
+3. Set up a cron job that periodically submits: `stocki quant "analyze today's market movements" --task-id <id>`
+4. Before each submission, check status first; if an analysis is still running, skip
 5. On success, present results to user; on running/queued, stay silent
 
 This enables use cases like: daily portfolio reviews, weekly sector reports, pre-market briefings.
@@ -174,10 +173,10 @@ This enables use cases like: daily portfolio reviews, weekly sector reports, pre
 |---------|-------|-------------|---------|
 | `stocki instant` | `<question> [--timezone TZ]` | Quick financial Q&A | 180s |
 | `stocki quant` | `<question> [--task-id ID] [--timezone TZ]` | Submit quant analysis | 30s |
-| `stocki tasks` | *(no args)* | List all quant tasks | 30s |
-| `stocki status` | `<task_id>` | Task details + all run statuses | 120s |
-| `stocki files` | `<task_id>` | List result files by run | 120s |
-| `stocki download` | `<task_id> <file_path> [--output path]` | Download report or image | 300s |
+| `stocki list` | *(no args)* | List all quant analyses | 30s |
+| `stocki status` | `<id>` | Analysis details + run statuses | 120s |
+| `stocki files` | `<id>` | List result files | 120s |
+| `stocki download` | `<id> <file_path> [--output path]` | Download report or image | 300s |
 | `stocki diagnose` | *(no args)* | Self-diagnostic | 180s |
 
 All commands: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unavailable, Exit 3 = rate limited/quota exceeded.
@@ -194,7 +193,7 @@ All commands are invoked as: `{baseDir}/scripts/stocki <command> [args]`
 | `auth_invalid` | API key may be wrong or expired; suggest contacting Stocki team |
 | `quota_exceeded` | Daily quota used up; show invite URL from details if available |
 | `stocki_unavailable` | Report outage; suggest retrying in a few minutes |
-| `task_not_found` | Run `stocki tasks` to find valid tasks |
+| `task_not_found` | Run `stocki list` to find valid analyses |
 | `run_error` | Report error message verbatim; offer to resubmit |
 | `report_not_found` | No reports yet; suggest running a quant analysis first |
 | `rate_limited` | Quant queue full or rate exceeded; wait and retry |
@@ -236,8 +235,8 @@ Create a local `stocki/` directory in the user's home folder to persist investme
 ~/stocki/
 ├── profile.md          # User profile: investment preferences, focus areas
 ├── portfolio.md        # Current holdings: positions, cost basis, allocation targets
-├── tasks/              # Local notes organized by task
-│   └── <task_name>/
+├── quant/              # Local notes organized by quant analysis
+│   └── <analysis_name>/
 │       ├── notes.md    # Research notes, key findings, follow-up questions
 │       └── reports/    # Downloaded reports
 └── watchlist.md        # Tracked stocks, sectors, or themes
@@ -248,7 +247,7 @@ Create a local `stocki/` directory in the user's home folder to persist investme
 On first financial interaction, create the workspace if it doesn't exist:
 
 ```bash
-mkdir -p ~/stocki/tasks
+mkdir -p ~/stocki/quant
 ```
 
 ### User Profile (`~/stocki/profile.md`)
@@ -268,9 +267,9 @@ Do NOT add fields like "risk tolerance" or "experience" unless the user explicit
 
 Record the user's holdings when they share them.
 
-### Task Notes (`~/stocki/tasks/<task_name>/`)
+### Task Notes (`~/stocki/quant/<analysis_name>/`)
 
-For each complex task, create a local directory mirroring the remote task. Store:
+For each quant analysis, create a local directory. Store:
 - `notes.md` — key findings, user decisions, follow-up questions
 - `reports/` — downloaded reports
 

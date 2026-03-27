@@ -256,7 +256,7 @@ def main():
     p.add_argument("--task-id", default=None, help="Existing task ID for iteration")
     p.add_argument("--timezone", default="Asia/Shanghai", help="IANA timezone (default: Asia/Shanghai)")
 
-    sub.add_parser("tasks", help="List all quant tasks")
+    sub.add_parser("list", help="List all quant analyses")
 
     p = sub.add_parser("status", help="Show task details and run statuses")
     p.add_argument("task_id", help="Task ID")
@@ -275,7 +275,7 @@ def main():
     {
         "instant": cmd_instant,
         "quant": cmd_quant,
-        "tasks": cmd_tasks,
+        "list": cmd_tasks,
         "status": cmd_status,
         "files": cmd_files,
         "download": cmd_download,
