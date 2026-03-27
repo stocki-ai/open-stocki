@@ -48,7 +48,7 @@ To persist across reboots, add the above lines to `~/.bashrc` or `~/.zshrc`.
 Run the self-diagnostic script to confirm both instant and quant modes work:
 
 ```bash
-python3 ~/.openclaw/workspace/skills/stocki/scripts/stocki-diagnose.py
+~/.openclaw/workspace/skills/stocki/scripts/stocki diagnose
 ```
 
 Both checks must pass for the skill to be ready.
