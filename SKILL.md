@@ -63,21 +63,27 @@ This tests both instant and quant modes. All checks must pass before using the s
 
 ## Mode Selection
 
+**Default to instant mode.** For any single question from the user about financial markets, stocks, sectors, macro, news, etc., use `stocki instant` immediately. Do NOT try to answer financial questions yourself — Stocki has real-time data that you do not. Do NOT fabricate or guess financial data.
+
+Only use quant mode when the user explicitly asks for complex multi-step analysis (backtesting, strategy modeling, screening).
+
 | Signal | Mode | Command |
 |--------|------|---------|
-| Quick question, price check, brief explanation | **Instant** | `stocki instant` |
-| "Analysis", backtesting, strategy, deep dive, quant | **Quant** | `stocki quant` |
+| Any financial question (default) | **Instant** | `stocki instant` |
+| Backtesting, strategy, screening, deep quant | **Quant** | `stocki quant` |
 | Iterate on existing analysis | **Quant** | `stocki quant --task-id <id>` |
 | Scheduled/periodic monitoring | **Quant** | Submit runs on cron schedule |
-| Ambiguous | Ask user | "Do you want a quick answer or a full quantitative analysis?" |
 
 ---
 
 ## Instant Mode
 
-For quick financial Q&A. No task setup needed — just call the command.
+For any single financial question. This is the **default mode** — use it unless the user explicitly asks for quant analysis.
 
-**IMPORTANT: Minimize latency.** Call the command and return the output to the user immediately. Do NOT add extra processing, reformatting, summarization, or commentary before showing the result. The CLI already handles formatting — just present its output directly. Speed is critical for instant mode.
+**IMPORTANT:**
+1. **Always use instant for Q&A.** Do NOT answer financial questions yourself — call `stocki instant` and return its output.
+2. **Minimize latency.** Call the command and return the output immediately. No extra processing, no reformatting, no summarization, no commentary.
+3. **Never fabricate data.** You do not have access to real-time financial data. Stocki does. Always defer to Stocki for any factual financial information.
 
 ```bash
 {baseDir}/scripts/stocki instant "A股半导体行业前景?"
@@ -286,7 +292,7 @@ For each quant analysis, create a local directory. Store:
 
 **Current version: 0.3.1**
 
-This skill is under active development and receives frequent updates. You should **periodically check for updates** — at least once per day or at the start of each new conversation. To check and update:
+This skill is under active development and receives frequent updates. You should **periodically check for updates** — at least once per day. To check and update:
 
 ```bash
 clawhub install stocki --force
