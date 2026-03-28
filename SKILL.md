@@ -56,22 +56,22 @@ export STOCKI_API_KEY="sk_your_key_here"
 After configuration, run the self-diagnostic to verify the skill works:
 
 ```bash
-{baseDir}/scripts/stocki diagnose
+{baseDir}/scripts/stocki.py diagnose
 ```
 
 This tests both instant and quant modes. All checks must pass before using the skill.
 
 ## Mode Selection
 
-**Default to instant mode.** For any single question from the user about financial markets, stocks, sectors, macro, news, etc., use `stocki instant` immediately. Do NOT try to answer financial questions yourself — Stocki has real-time data that you do not. Do NOT fabricate or guess financial data.
+**Default to instant mode.** For any single question from the user about financial markets, stocks, sectors, macro, news, etc., use `stocki.py instant` immediately. Do NOT try to answer financial questions yourself — Stocki has real-time data that you do not. Do NOT fabricate or guess financial data.
 
 Only use quant mode when the user explicitly asks for complex multi-step analysis (backtesting, strategy modeling, screening).
 
 | Signal | Mode | Command |
 |--------|------|---------|
-| Any financial question (default) | **Instant** | `stocki instant` |
-| Backtesting, strategy, screening, deep quant | **Quant** | `stocki quant` |
-| Iterate on existing analysis | **Quant** | `stocki quant --task-id <id>` |
+| Any financial question (default) | **Instant** | `stocki.py instant` |
+| Backtesting, strategy, screening, deep quant | **Quant** | `stocki.py quant` |
+| Iterate on existing analysis | **Quant** | `stocki.py quant --task-id <id>` |
 | Scheduled/periodic monitoring | **Quant** | Submit runs on cron schedule |
 
 ---
@@ -81,13 +81,13 @@ Only use quant mode when the user explicitly asks for complex multi-step analysi
 For any single financial question. This is the **default mode** — use it unless the user explicitly asks for quant analysis.
 
 **IMPORTANT:**
-1. **Always use instant for Q&A.** Do NOT answer financial questions yourself — call `stocki instant` and return its output.
+1. **Always use instant for Q&A.** Do NOT answer financial questions yourself — call `stocki.py instant` and return its output.
 2. **Minimize latency.** Call the command and return the output immediately. No extra processing, no reformatting, no summarization, no commentary.
 3. **Never fabricate data.** You do not have access to real-time financial data. Stocki does. Always defer to Stocki for any factual financial information.
 
 ```bash
-{baseDir}/scripts/stocki instant "A股半导体行业前景?"
-{baseDir}/scripts/stocki instant "What's the outlook for US tech stocks?" --timezone America/New_York
+{baseDir}/scripts/stocki.py instant "A股半导体行业前景?"
+{baseDir}/scripts/stocki.py instant "What's the outlook for US tech stocks?" --timezone America/New_York
 ```
 
 - **Stdout:** Formatted answer — present directly to user without additional processing
@@ -105,14 +105,14 @@ For complex analysis that takes minutes to complete. Each quant submission creat
 ### Step 1: Submit a quant analysis
 
 ```bash
-{baseDir}/scripts/stocki quant "回测CSI 300动量策略，近3年数据"
+{baseDir}/scripts/stocki.py quant "回测CSI 300动量策略，近3年数据"
 # Output: id, name (auto-generated)
 ```
 
 To iterate on an existing analysis:
 
 ```bash
-{baseDir}/scripts/stocki quant "增加小盘股过滤器" --task-id <id>
+{baseDir}/scripts/stocki.py quant "增加小盘股过滤器" --task-id <id>
 ```
 
 Surface `id` to user immediately after submission. Analysis can take up to 30 minutes.
@@ -122,7 +122,7 @@ Surface `id` to user immediately after submission. Analysis can take up to 30 mi
 After submitting, set up a recurring check (every 30 seconds to 1 minute) to poll the status:
 
 ```bash
-{baseDir}/scripts/stocki status <id>
+{baseDir}/scripts/stocki.py status <id>
 ```
 
 Polling rules:
@@ -136,14 +136,14 @@ Do NOT block the conversation waiting for the analysis to finish — set up the 
 
 When an analysis succeeds, the status output includes a **summary** and **file paths**.
 
-1. **Get the summary** from `stocki status` output
-2. **List files:** `stocki files <id>`
-3. **Download files:** `stocki download <id> <file_path>`
+1. **Get the summary** from `stocki.py status` output
+2. **List files:** `stocki.py files <id>`
+3. **Download files:** `stocki.py download <id> <file_path>`
 
 ```bash
-{baseDir}/scripts/stocki files <id>
-{baseDir}/scripts/stocki download <id> runs/run_001/report.md --output ~/stocki/quant/<name>/report.md
-{baseDir}/scripts/stocki download <id> runs/run_001/images/chart_001.png --output ~/stocki/quant/<name>/chart.png
+{baseDir}/scripts/stocki.py files <id>
+{baseDir}/scripts/stocki.py download <id> runs/run_001/report.md --output ~/stocki/quant/<name>/report.md
+{baseDir}/scripts/stocki.py download <id> runs/run_001/images/chart_001.png --output ~/stocki/quant/<name>/chart.png
 ```
 
 **Delivering results to user:**
@@ -162,9 +162,9 @@ A single quant analysis can have multiple rounds (iterations). Each round builds
 
 OpenClaw can set up recurring quant analyses for periodic monitoring:
 
-1. Submit initial analysis: `stocki quant "A股持仓日报"` — auto-creates an analysis
+1. Submit initial analysis: `stocki.py quant "A股持仓日报"` — auto-creates an analysis
 2. Note the returned `id`
-3. Set up a cron job that periodically submits: `stocki quant "analyze today's market movements" --task-id <id>`
+3. Set up a cron job that periodically submits: `stocki.py quant "analyze today's market movements" --task-id <id>`
 4. Before each submission, check status first; if an analysis is still running, skip
 5. On success, present results to user; on running/queued, stay silent
 
@@ -174,22 +174,22 @@ This enables use cases like: daily portfolio reviews, weekly sector reports, pre
 
 ## CLI Reference
 
-**IMPORTANT:** Always use the provided `stocki` CLI for all Stocki interactions. Do NOT write custom code, wrapper scripts, or inline API calls — this causes unnecessary response delays and errors. Only write custom code if a required feature is absolutely not covered by the CLI.
+**IMPORTANT:** Always use the provided `stocki.py` CLI for all Stocki interactions. Do NOT write custom code, wrapper scripts, or inline API calls — this causes unnecessary response delays and errors. Only write custom code if a required feature is absolutely not covered by the CLI.
 
 | Command | Usage | Description | Timeout |
 |---------|-------|-------------|---------|
-| `stocki instant` | `<question> [--timezone TZ]` | Quick financial Q&A | 180s |
-| `stocki quant` | `<question> [--task-id ID] [--timezone TZ]` | Submit quant analysis | 30s |
-| `stocki list` | *(no args)* | List all quant analyses | 30s |
-| `stocki status` | `<id>` | Analysis details + run statuses | 120s |
-| `stocki files` | `<id>` | List result files | 120s |
-| `stocki download` | `<id> <file_path> [--output path]` | Download report or image | 300s |
-| `stocki diagnose` | *(no args)* | Self-diagnostic | 180s |
-| `stocki doctor` | *(no args)* | Check and fix setup issues | 60s |
+| `stocki.py instant` | `<question> [--timezone TZ]` | Quick financial Q&A | 180s |
+| `stocki.py quant` | `<question> [--task-id ID] [--timezone TZ]` | Submit quant analysis | 30s |
+| `stocki.py list` | *(no args)* | List all quant analyses | 30s |
+| `stocki.py status` | `<id>` | Analysis details + run statuses | 120s |
+| `stocki.py files` | `<id>` | List result files | 120s |
+| `stocki.py download` | `<id> <file_path> [--output path]` | Download report or image | 300s |
+| `stocki.py diagnose` | *(no args)* | Self-diagnostic | 180s |
+| `stocki.py doctor` | *(no args)* | Check and fix setup issues | 60s |
 
 All commands: Exit 0 = success, Exit 1 = auth/client error, Exit 2 = service unavailable, Exit 3 = rate limited/quota exceeded.
 
-All commands are invoked as: `{baseDir}/scripts/stocki <command> [args]`
+All commands are invoked as: `python3 {baseDir}/scripts/stocki.py <command> [args]`
 
 ---
 
@@ -201,7 +201,7 @@ All commands are invoked as: `{baseDir}/scripts/stocki <command> [args]`
 | `auth_invalid` | API key may be wrong or expired; suggest contacting Stocki team |
 | `quota_exceeded` | Daily quota used up; show invite URL from details if available |
 | `stocki_unavailable` | Report outage; suggest retrying in a few minutes |
-| `task_not_found` | Run `stocki list` to find valid analyses |
+| `task_not_found` | Run `stocki.py list` to find valid analyses |
 | `run_error` | Report error message verbatim; offer to resubmit |
 | `report_not_found` | No reports yet; suggest running a quant analysis first |
 | `rate_limited` | Quant queue full or rate exceeded; wait and retry |

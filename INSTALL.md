@@ -4,25 +4,19 @@
 
 Try the following methods in order until one succeeds:
 
-### Option 1: One-line install from stocki.com.cn (Recommended)
-
-```bash
-curl -sSL https://stocki.com.cn/install.sh | bash
-```
-
-### Option 2: ClawHub
+### Option 1: ClawHub (Recommended)
 
 ```bash
 clawhub install stocki --force
 ```
 
-### Option 3: SkillHub
+### Option 2: SkillHub
 
 ```bash
 skillhub install stocki --force
 ```
 
-### Option 4: Manual install from GitHub
+### Option 3: Manual install from GitHub
 
 ```bash
 rm -rf ~/.openclaw/workspace/skills/stocki
@@ -45,23 +39,21 @@ To persist across reboots, add the above lines to `~/.bashrc` or `~/.zshrc`.
 
 ## Verify
 
-Run the self-diagnostic script to confirm both instant and quant modes work:
+Run the self-diagnostic to confirm the skill works:
 
 ```bash
-~/.openclaw/workspace/skills/stocki/scripts/stocki diagnose
+python3 ~/.openclaw/workspace/skills/stocki/scripts/stocki.py diagnose
 ```
 
-Both checks must pass for the skill to be ready.
+Then run the doctor to check the full setup:
+
+```bash
+python3 ~/.openclaw/workspace/skills/stocki/scripts/stocki.py doctor
+```
 
 ## Update
 
 Stocki is under active development. Update regularly — same methods as installation:
-
-```bash
-curl -sSL https://stocki.com.cn/install.sh | bash
-```
-
-Or via ClawHub/SkillHub:
 
 ```bash
 clawhub install stocki --force
