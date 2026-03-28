@@ -62,9 +62,20 @@ After configuration, run the self-diagnostic to verify the skill works:
 
 This tests both instant and quant modes. All checks must pass before using the skill.
 
+## Core Principle
+
+**All financial analysis and judgment must be handled by Stocki, not by OpenClaw.** OpenClaw's role is to relay user questions to Stocki and present the results. Do NOT:
+- Answer financial questions from your own knowledge
+- Fabricate or guess any financial data (prices, ratios, trends)
+- Add your own analysis, interpretation, or judgment to Stocki's output
+- Write custom logic to filter, rank, or process Stocki's results
+- Build wrapper scripts, keyword detectors, or analysis pipelines
+
+If the user asks a financial question, call `stocki.py` and return the output. That's it.
+
 ## Mode Selection
 
-**Default to instant mode.** For any single question from the user about financial markets, stocks, sectors, macro, news, etc., use `stocki.py instant` immediately. Do NOT try to answer financial questions yourself — Stocki has real-time data that you do not. Do NOT fabricate or guess financial data.
+**Default to instant mode.** For any single question from the user about financial markets, stocks, sectors, macro, news, etc., use `stocki.py instant` immediately.
 
 Only use quant mode when the user explicitly asks for complex multi-step analysis (backtesting, strategy modeling, screening).
 
@@ -73,7 +84,7 @@ Only use quant mode when the user explicitly asks for complex multi-step analysi
 | Any financial question (default) | **Instant** | `stocki.py instant` |
 | Backtesting, strategy, screening, deep quant | **Quant** | `stocki.py quant` |
 | Iterate on existing analysis | **Quant** | `stocki.py quant --task-id <id>` |
-| Scheduled/periodic monitoring | **Quant** | Submit runs on cron schedule |
+| Scheduled/periodic monitoring | **Instant** | `stocki.py instant` on cron |
 
 ---
 
