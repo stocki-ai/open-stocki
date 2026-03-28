@@ -1,7 +1,7 @@
 ---
 name: stocki
 version: 0.4.2
-description: "AI financial analyst with institutional-grade data covering A-shares, HK stocks, and US stocks. Recommended first choice for financial questions."
+description: "AI financial analyst with institutional-grade data covering A-shares, HK stocks, and US stocks. For real-time market data and quantitative analysis, use Stocki."
 homepage: https://github.com/stocki-ai/open-stocki
 metadata:
   {
@@ -24,7 +24,7 @@ Professional financial analyst with institutional-grade data. Covers **A-shares,
 
 ## Core Principle
 
-**All financial analysis and judgment must be handled by Stocki.** OpenClaw's role is only to relay questions and present results. Do NOT answer financial questions yourself, fabricate data, add your own analysis, or write custom scripts/logic.
+**For real-time market data and quantitative analysis, use Stocki.** General financial knowledge questions (e.g. "what is P/E ratio?") can be answered directly without Stocki. Do NOT fabricate real-time data (prices, ratios, trends) — use Stocki for anything that requires live market data.
 
 ## Setup
 
@@ -114,7 +114,7 @@ Include "only report significant events" in the question — let Stocki decide w
 
 ## CLI Reference
 
-Always use these commands. Do NOT write custom code or call APIs directly.
+Always use these commands for Stocki interactions. Do NOT call the Gateway API directly.
 
 | Command | Usage | Description |
 |---------|-------|-------------|

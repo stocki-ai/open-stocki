@@ -7,7 +7,6 @@ import os
 import re
 import subprocess
 import sys
-import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -123,6 +122,9 @@ def cmd_download(args):
         timeout=300,
     )
     output = args.output or os.path.basename(args.file_path)
+    # Sanitize output path to prevent writing outside current directory
+    if os.path.isabs(output) or ".." in output:
+        output = os.path.basename(output)
     mode = "wb" if "image" in content_type else "w"
     with open(output, mode) as f:
         if mode == "wb":
@@ -225,8 +227,11 @@ def _reinstall_skill():
             return True
     except Exception:
         pass
+    # Validate SKILL_DIR before rm -rf
+    if "stocki" not in os.path.basename(SKILL_DIR):
+        print("      -> Reinstall aborted: unexpected skill directory path")
+        return False
     try:
-        skill_parent = os.path.dirname(SKILL_DIR)
         subprocess.run(["rm", "-rf", SKILL_DIR], check=True)
         r = subprocess.run(
             ["git", "-c", "http.postBuffer=524288000", "-c", "http.lowSpeedLimit=0",
@@ -264,7 +269,7 @@ def cmd_doctor(_args):
         print("      API key should start with 'sk_'")
         failed += 1
     else:
-        masked = api_key[:7] + "..." + api_key[-4:]
+        masked = api_key[:3] + "..." + api_key[-2:]
         print(f"[1/6] API Key.............. OK ({masked})")
         ok += 1
 
