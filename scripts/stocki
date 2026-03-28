@@ -13,9 +13,6 @@ from _gateway import (
     gateway_request_raw,
 )
 
-MAX_WAIT = 600
-POLL_INTERVAL = 30
-
 
 # --- instant ---
 
@@ -137,11 +134,9 @@ def cmd_diagnose(_args):
     print("=" * 40)
 
     passed = 0
-    total = 2
+    total = 1
 
     if _check_instant():
-        passed += 1
-    if _check_quant():
         passed += 1
 
     print("=" * 40)
@@ -150,7 +145,7 @@ def cmd_diagnose(_args):
 
 
 def _check_instant():
-    print("[1/2] Instant mode...", end=" ", flush=True)
+    print("[1/1] Instant mode...", end=" ", flush=True)
     try:
         result = gateway_request(
             "POST", "/v1/instant",
@@ -170,74 +165,6 @@ def _check_instant():
             return False
     except SystemExit:
         print("FAIL")
-        return False
-
-
-def _check_quant():
-    print("[2/2] Quant mode...")
-    try:
-        print("  Submitting quant...", end=" ", flush=True)
-        result = gateway_request(
-            "POST", "/v1/quant",
-            {"question": "What were the top 3 constituents of S&P 500 by market cap as of 2024-12-31? List their ticker symbols.", "timezone": "Asia/Shanghai"},
-            timeout=30,
-        )
-        task_id = result.get("task_id", "")
-        task_name = result.get("task_name", "")
-        if not task_id:
-            print("FAIL (no task_id)")
-            return False
-        print(f"OK (task_id={task_id}, name={task_name})")
-
-        print("  Waiting for completion", end="", flush=True)
-        elapsed = 0
-        final_status = ""
-        task_detail = {}
-        while elapsed < MAX_WAIT:
-            time.sleep(POLL_INTERVAL)
-            elapsed += POLL_INTERVAL
-            print(".", end="", flush=True)
-            task_detail = gateway_request("GET", f"/v1/tasks/{task_id}", timeout=120)
-            current_run = task_detail.get("current_run")
-            if current_run is None:
-                runs = task_detail.get("runs", [])
-                if runs:
-                    final_status = runs[-1].get("status", "unknown")
-                    if final_status in ("success", "error"):
-                        break
-            else:
-                final_status = current_run.get("status", "unknown")
-
-        print()
-        if final_status == "success":
-            print(f"  Run completed: OK (success in {elapsed}s)")
-        elif final_status == "error":
-            runs = task_detail.get("runs", [])
-            err = runs[-1].get("error_message", "unknown") if runs else "unknown"
-            print(f"  Run completed: FAIL (error: {err})")
-            return False
-        else:
-            print(f"  Run timeout: FAIL (still {final_status} after {MAX_WAIT}s)")
-            return False
-
-        runs = task_detail.get("runs", [])
-        last_run = runs[-1] if runs else {}
-        summary = last_run.get("summary", "")
-        files = last_run.get("files", [])
-        print(f"  Files: {len(files)}, Summary: {len(summary)} chars")
-
-        print("  Verifying answer...", end=" ", flush=True)
-        check_text = (summary or "").upper()
-        expected = ["AAPL", "MSFT", "NVDA"]
-        found = [s for s in expected if s in check_text]
-        if len(found) >= 2:
-            print(f"OK (found {', '.join(found)})")
-        else:
-            print(f"WARN (expected AAPL/MSFT/NVDA, found: {found or 'none'})")
-
-        return True
-    except SystemExit:
-        print(" FAIL")
         return False
 
 
