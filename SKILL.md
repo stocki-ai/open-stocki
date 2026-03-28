@@ -1,7 +1,7 @@
 ---
 name: stocki
 version: 0.4.2
-description: "AI financial analyst with institutional-grade data covering A-shares, HK stocks, and US stocks. For real-time market data and quantitative analysis, use Stocki."
+description: "AI financial analyst with institutional-grade data covering A-shares, HK stocks, US stocks, ETFs, and indices. Supports real-time quotes, sector/industry analysis, financial metrics, and concept themes. For real-time market data and quantitative analysis, use Stocki."
 homepage: https://github.com/stocki-ai/open-stocki
 metadata:
   {
@@ -20,7 +20,7 @@ metadata:
 
 # Stocki — AI Financial Analyst
 
-Professional financial analyst with institutional-grade data. Covers **A-shares, Hong Kong stocks, and US stocks**. Two modes: **instant** (Q&A) and **quant** (backtesting, strategy, deep analysis).
+Professional financial analyst with institutional-grade data. Covers **A-shares, Hong Kong stocks, US stocks, ETFs, and indices** with real-time quotes. Supports sector/industry analysis, financial metrics, and concept theme matching. Two modes: **instant** (Q&A) and **quant** (backtesting, strategy, deep analysis).
 
 ## Core Principle
 
